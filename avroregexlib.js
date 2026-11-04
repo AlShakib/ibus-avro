@@ -25,7 +25,7 @@
     =============================================================================
 */
 
-const utfconv = imports.utf8;
+const UnicodeEscape = imports.unicodeescape;
 
 function AvroRegex () {}
 
@@ -161,18 +161,7 @@ AvroRegex.prototype = {
     
     
     _convertToUnicodeValue: function(input){
-        var output = '';
-        input = utfconv.utf8Decode(input);
-        
-        for (var i = 0; i < input.length; i++){
-            var charCode = input.charCodeAt(i);
-            if (charCode >= 255){
-                output += '\\u0' + charCode.toString(16);
-            } else {
-                output += input.charAt(i);
-            }
-        }
-        return output;
+        return UnicodeEscape.toUnicodeEscapes(input);
     },
     
     

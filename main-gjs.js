@@ -81,9 +81,6 @@ if (bus.is_connected()) {
     
     function engine_process_key_event(engine, keyval, keycode, state) {
 
-        //print keypress infos, helpful for debugging
-        print(keyval + " " + keycode + " " + state);
-
         //sanitize state, main reason is to weed out xorg masks
         state = state & IBus.ModifierType.MODIFIER_MASK;
 
@@ -104,7 +101,6 @@ if (bus.is_connected()) {
              keyval == IBus.KP_Decimal ||
              keyval == IBus.KP_Divide ||
              keyval == IBus.KP_Multiply ||
-             keyval == IBus.KP_Divide ||
              keyval == IBus.KP_Subtract) {
             
             engine.buffertext += IBus.keyval_to_unicode(keyval);
@@ -146,14 +142,13 @@ if (bus.is_connected()) {
             }
             
         } else if (keyval == IBus.Up || keyval == IBus.KP_Up || keyval == IBus.Down || keyval == IBus.KP_Down) {
-            print (engine.lookuptable.get_orientation());
             if (engine.currentSuggestions.length <= 0 || engine.lookuptable.get_orientation() == 0){                    
                 commitCandidate(engine);
             } else {
-                if (keyval == IBus.Up) {
+                if (keyval == IBus.Up || keyval == IBus.KP_Up) {
                     decSelection(engine);
                 }
-                else if (keyval == IBus.Down) {
+                else if (keyval == IBus.Down || keyval == IBus.KP_Down) {
                     incSelection(engine);
                 }
                 
@@ -193,7 +188,6 @@ if (bus.is_connected()) {
             engine.currentSelection = index;
             preeditCandidate(engine);
             suggestionBuilder.updateCandidateSelection(engine.buffertext, engine.currentSuggestions[engine.currentSelection]);
-            print("candidate clicked: " + index + " " + button + " " + state);
         }
     }
 

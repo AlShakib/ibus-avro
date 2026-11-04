@@ -29,6 +29,7 @@
 const gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 const Gda = imports.gi.Gda;
+const UnicodeEscape = imports.unicodeescape;
 
 function DB () {}
 
@@ -188,21 +189,6 @@ DB.prototype = {
   	}
 }
 
-function _convertToUnicodeValue(input){
-    var output = '';
-    
-    for (var i = 0; i < input.length; i++){
-        var charCode = input.charCodeAt(i);
-        if (charCode >= 255){
-            output += '\\u0' + charCode.toString(16);
-        } else {
-            output += input.charAt(i);
-        }
-    }
-    return output;
-}
-
-
 function saveSuffix () {
     try {
         var file = gio.File.new_for_path ("suffixdict.js");
@@ -215,7 +201,7 @@ function saveSuffix () {
         var file_stream = file.create (gio.FileCreateFlags.NONE, null);
         
         var json = JSON.stringify(suffixDict);
-        json = "var db = " + _convertToUnicodeValue(json) + ";";
+        json = "var db = " + UnicodeEscape.toUnicodeEscapes(json) + ";";
         
         // Write text data to file
         var data_stream =  gio.DataOutputStream.new (file_stream);
@@ -239,7 +225,7 @@ function saveData () {
         var file_stream = file.create (gio.FileCreateFlags.NONE, null);
         
         var json = JSON.stringify(database);
-        json = "var tables = " + _convertToUnicodeValue(json) + ";";
+        json = "var tables = " + UnicodeEscape.toUnicodeEscapes(json) + ";";
         
         // Write text data to file
         var data_stream =  gio.DataOutputStream.new (file_stream);

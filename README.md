@@ -93,6 +93,12 @@ using the source code in this repository.
 
 **Recent Cinnamon versions**: See [this comment](https://github.com/sarim/ibus-avro/issues/226#issuecomment-3762641612).
 
+## Tests
+
+The suggestion engine has headless tests. They need only `gjs`, and they use a temporary home folder:
+
+    tests/run.sh
+
 ## Contributors
  
 __IBus Engine__ by __Sarim Khan__ <sarim2005@gmail.com>

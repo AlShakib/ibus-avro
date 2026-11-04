@@ -1,10 +1,10 @@
 AUTOMAKE_OPTIONS = foreign
-FILES = autocorrect.js avro-bangla.png avrodict.js avrolib.js avropref.ui avroregexlib.js changeloggen.sh com.omicronlab.avro.gschema.xml configure.ac database-compiler.js Database.db3 dbsearch.js evars.js.in ibus-avro.xml.in ibus-setup-ibus-avro.desktop.in levenshtein.js main-gjs.js Makefile.am pref.js README.md suffixdict.js suggestionbuilder.js utf8.js
+FILES = autocorrect.js avro-bangla.png avrodict.js avrolib.js avropref.ui avroregexlib.js changeloggen.sh com.omicronlab.avro.gschema.xml configure.ac database-compiler.js Database.db3 dbsearch.js evars.js.in ibus-avro.xml.in ibus-setup-ibus-avro.desktop.in levenshtein.js main-gjs.js Makefile.am pref.js README.md suffixdict.js suggestionbuilder.js unicodeescape.js
 
 all: build
 	@:
 	
-build: evars.js ibus-avro.xml ibus-setup-ibus-avro.desktop main-gjs.js avrolib.js utf8.js avro-bangla.png avrodict.js suffixdict.js dbsearch.js avroregexlib.js suggestionbuilder.js levenshtein.js autocorrect.js
+build: evars.js ibus-avro.xml ibus-setup-ibus-avro.desktop main-gjs.js avrolib.js unicodeescape.js avro-bangla.png avrodict.js suffixdict.js dbsearch.js avroregexlib.js suggestionbuilder.js levenshtein.js autocorrect.js
 	@:
 
 %: %.in ibus-avro.xml.in evars.js.in evars.js.in ibus-setup-ibus-avro.desktop.in
@@ -12,6 +12,7 @@ build: evars.js ibus-avro.xml ibus-setup-ibus-avro.desktop main-gjs.js avrolib.j
 	( \
 		libexecdir=${libexecdir}; \
 		pkgdatadir=${pkgdatadir}; \
+		gjs=${GJS}; \
 		s=`cat $<`; \
 		eval "echo \"$${s}\""; \
 	) > $@
@@ -25,7 +26,7 @@ install: all
 	${INSTALL} -m 644 evars.js ${pkgdatadir}/evars.js
 	${INSTALL} -m 755 main-gjs.js ${pkgdatadir}/main-gjs.js	
 	${INSTALL} -m 644 avrolib.js ${pkgdatadir}/avrolib.js
-	${INSTALL} -m 644 utf8.js ${pkgdatadir}/utf8.js
+	${INSTALL} -m 644 unicodeescape.js ${pkgdatadir}/unicodeescape.js
 	${INSTALL} -m 644 avrodict.js ${pkgdatadir}/avrodict.js
 	${INSTALL} -m 644 suffixdict.js ${pkgdatadir}/suffixdict.js
 	${INSTALL} -m 644 dbsearch.js ${pkgdatadir}/dbsearch.js
@@ -51,7 +52,7 @@ installdeb: all
 	${INSTALL} -m 644 evars.js $(DESTDIR)${pkgdatadir}/evars.js
 	${INSTALL} -m 755 main-gjs.js $(DESTDIR)${pkgdatadir}/main-gjs.js	
 	${INSTALL} -m 644 avrolib.js $(DESTDIR)${pkgdatadir}/avrolib.js
-	${INSTALL} -m 644 utf8.js $(DESTDIR)${pkgdatadir}/utf8.js
+	${INSTALL} -m 644 unicodeescape.js $(DESTDIR)${pkgdatadir}/unicodeescape.js
 	${INSTALL} -m 644 avrodict.js $(DESTDIR)${pkgdatadir}/avrodict.js
 	${INSTALL} -m 644 suffixdict.js $(DESTDIR)${pkgdatadir}/suffixdict.js
 	${INSTALL} -m 644 dbsearch.js $(DESTDIR)${pkgdatadir}/dbsearch.js

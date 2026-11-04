@@ -24,13 +24,12 @@
     =============================================================================
 */
 
-const gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
 const dictsearch = imports.dbsearch;
 const autocorrectdb = imports.autocorrect.db;
 const Avroparser = imports.avrolib.OmicronLab.Avro.Phonetic;
-const utfconv = imports.utf8;
+const UnicodeEscape = imports.unicodeescape;
 const EditDistance = imports.levenshtein;
 const suffixDict = imports.suffixdict.db;
 
@@ -43,6 +42,7 @@ SuggestionBuilder.prototype = {
     _init: function(){
         this._dbSearch = new dictsearch.DBSearch ();
         this._candidateSelections = {};
+        this._candidateSelectionsChanged = false;
         this._phoneticCache = {};
         this._loadCandidateSelectionsFromFile();
         this._tempCache = {};
@@ -73,7 +73,7 @@ SuggestionBuilder.prototype = {
     
     
     _getClassicPhonetic: function(banglish){
-        return utfconv.utf8Decode(Avroparser.parse(banglish));
+        return Avroparser.parse(banglish);
     },
     
     
@@ -145,21 +145,6 @@ SuggestionBuilder.prototype = {
         if (arr.indexOf(item) == -1){
             arr.push(item);
         }
-    },
-    
-    
-    _convertToUnicodeValue: function(input){
-        var output = '';
-
-        for (var i = 0; i < input.length; i++){
-            var charCode = input.charCodeAt(i);
-            if (charCode >= 255){
-                output += '\\u0' + charCode.toString(16);
-            } else {
-                output += input.charAt(i);
-            }
-        }
-        return output;
     },
     
     
@@ -365,87 +350,61 @@ SuggestionBuilder.prototype = {
     },
     
     
+    _candidateSelectionsPath: function(){
+        return GLib.build_filenamev([GLib.get_home_dir(), ".candidate-selections.json"]);
+    },
+
+
     _loadCandidateSelectionsFromFile: function(){
+        this._candidateSelections = {};
+        var path = this._candidateSelectionsPath();
+        if (!GLib.file_test(path, GLib.FileTest.EXISTS)){
+            return;
+        }
+
         try {
-            var file = gio.File.new_for_path(GLib.get_home_dir() + "/.candidate-selections.json");
-        
-            if (file.query_exists (null)) {
-                
-                var file_stream = file.read(null);
-                var data_stream = gio.DataInputStream.new(file_stream);
-                var json = data_stream.read_until("", null);
-                this._candidateSelections = JSON.parse(json[0]) || {};
-                
-                /*
-                file.read_async(0, null,
-                		function(source, result){
-                		    var file_stream = source.read_finish(result);
-                		    
-                		    if (file_stream){
-                		        var data_stream = gio.DataInputStream.new(file_stream);
-                                var json = data_stream.read_until("", null);
-                                this._candidateSelections = JSON.parse(json[0]);
-                		    } else {
-                		        this._logger(e, 'Error in _loadCandidateSelectionsFromFile');
-                		    }
-                		});
-                */
-            } else {
-                this._candidateSelections = {};
-            }
+            var contents = GLib.file_get_contents(path)[1];
+            var json = new TextDecoder().decode(contents);
+            // Older versions wrote ZWNJ and ZWJ as "\u0200c" and "\u0200d".
+            // They load as U+0200 followed by "c" or "d". Restore them.
+            json = json.replace(/\\u0200([cd])/g, function(match, last){
+                return last === 'c' ? '\\u200c' : '\\u200d';
+            });
+            this._candidateSelections = JSON.parse(json) || {};
         } catch (e){
-           this._candidateSelections = {};
-           this._logger(e, 'Error in _loadCandidateSelectionsFromFile');
+            this._candidateSelections = {};
+            this._logger(e, 'Error in _loadCandidateSelectionsFromFile');
         }
     },
-    
-    
-    _saveCandidateSelectionsToFile: function(){
-        try {
-            var file = gio.File.new_for_path ( GLib.get_home_dir() + "/.candidate-selections.json");
-            
-            if (file.query_exists (null)) {
-                file.delete (null);
-            }
-            /*
-            var file_stream = file.create (gio.FileCreateFlags.NONE, null);
-            var json = JSON.stringify(this._candidateSelections);
-            json = this._convertToUnicodeValue(json);
-            // Write text data to file
-            var data_stream =  gio.DataOutputStream.new (file_stream);
-            data_stream.put_string (json, null);
-            */
-            var that = this;
-            // Create a new file with this name
-            file.create_async(gio.FileCreateFlags.NONE, 0, null, 
-                    function(source, result){
-                        var file_stream = source.create_finish(result);
-                        
-                        if (file_stream){
-                            var json = JSON.stringify(that._candidateSelections);
-                            json = that._convertToUnicodeValue(json);
 
-                            // Write text data to file
-                            var data_stream =  gio.DataOutputStream.new (file_stream);
-                            data_stream.put_string (json, null);
-                        } else {
-                            this._logger(e, 'Error in _saveCandidateSelectionsToFile');
-                        }
-                    });
+
+    _saveCandidateSelectionsToFile: function(){
+        if (!this._candidateSelectionsChanged){
+            return;
+        }
+
+        try {
+            var json = UnicodeEscape.toUnicodeEscapes(JSON.stringify(this._candidateSelections));
+            // file_set_contents writes a temporary file, then renames it.
+            GLib.file_set_contents(this._candidateSelectionsPath(), json);
+            this._candidateSelectionsChanged = false;
         } catch (e) {
-           this._logger(e, '_saveCandidateSelectionsToFile Error');
-       }
+            this._logger(e, '_saveCandidateSelectionsToFile Error');
+        }
     },
 
 
     _updateCandidateSelection: function(word, candidate){
-        this._candidateSelections[word] = candidate;
+        if (this._candidateSelections[word] !== candidate){
+            this._candidateSelections[word] = candidate;
+            this._candidateSelectionsChanged = true;
+        }
     },
     
     
     
     _logger: function (obj, msg){
-    	print ((msg || 'Log') + ': ' + JSON.stringify(obj, null, '\t'));
+        printerr((msg || 'Log') + ': ' + (obj && obj.message ? obj.message : JSON.stringify(obj)));
     },
     
     
@@ -465,6 +424,11 @@ SuggestionBuilder.prototype = {
             return;
         }
         
+        //Nothing was typed, for example a Ctrl or arrow key with an empty buffer
+        if (!word || !candidate){
+            return;
+        }
+
         //If it is called, user made the final decision here
         
         //Check and save selection without suffix if that is not present
@@ -473,8 +437,7 @@ SuggestionBuilder.prototype = {
             var eng = this._tempCache[candidate].eng;
             //Don't overwrite existing value
             if (!this._candidateSelections[eng]){
-                this._candidateSelections[eng] = base;
-                this._saveCandidateSelectionsToFile();
+                this._updateCandidateSelection(eng, base);
             }
         }
         

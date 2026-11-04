@@ -27,7 +27,6 @@
 
 const db = imports.avrodict;
 const RegexServer = imports.avroregexlib;
-const utfconv = imports.utf8;
 
 function DBSearch () {
     this._init();
